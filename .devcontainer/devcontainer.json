@@ -20,19 +20,22 @@
                 "ms-iot.vscode-ros",
                 "ms-vscode-remote.vscode-remote-extensionpack",
                 "ms-azuretools.vscode-containers",
-                "docker.docker"
+                "docker.docker",
+                "ms-python.black-formatter",
+                "ms-python.vscode-pylance"
             ]
         }
     },
     "containerEnv": {
-        "DISPLAY": "unix:0",
-        "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST",
-        "ROS_DOMAIN_ID": "42"
+        "DISPLAY": "unix:0", // Enables GUI applications
+        "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST", // Restrict ROS discovery to localhost
+        "ROS_DOMAIN_ID": "42" // Set the ROS 2 domain ID
     },
     "runArgs": [
         "--net=host",
         "--pid=host",
         "--ipc=host",
+        "--cap-add=SYS_PTRACE", // Add this for debugging
         "-e",
         "DISPLAY=${env:DISPLAY}"
     ],
@@ -47,5 +50,7 @@
             "dockerDashComposeVersion": "v2"
         }
     },
-    "postCreateCommand": "sudo rosdep update && sudo rosdep install --from-paths . --ignore-src -y && sudo chown -R $(whoami) /home/ws/"
+    "postCreateCommand": [
+        "rosdep update --rosdistro jazzy && rosdep install --from-paths . --ignore-src -y && sudo chown -R $(whoami) /home/ws/"
+    ]
 }

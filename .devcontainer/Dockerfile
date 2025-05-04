@@ -7,27 +7,46 @@ ARG USER_GID=$USER_UID
 RUN if id -u $USER_UID ; then userdel `id -un $USER_UID` ; fi
 
 # Create the user
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    #
-    # [Optional] Add sudo support. Omit if you don't need to install software after connecting.
-    && apt-get update \
+RUN groupadd --gid $USER_GID $USERNAME && \
+    useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+
+RUN apt-get update \
     && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y \
+    # espeak \
+    # i2c-tools \
+    # libsdl2-dev \
+    # libsdl2-mixer-dev \
+    # libttspico-utils \
+    # portaudio19-dev \
+    # python3-pillow \
+    # python3-pyserial \
+    # raspi-config \
+    # sox \
     docker-compose-v2 \
     docker.io \
-    vim
+    python3-gpiozero \
+    python3-pip \
+    python3-pyaudio \
+    python3-rpi-lgpio \
+    python3-smbus \
+    python3-smbus2 \
+    python3-spidev \
+    python3-twisted \
+    python3-watchdog \
+    ros-jazzy-ackermann-msgs \
+    vim 
 
-ENV SHELL /bin/bash
+ENV SHELL=/bin/bash
+#ENV GPIOZERO_PIN_FACTORY=lgpio
 
-# ********************************************************
-# * Anything else you want to do like clean up goes here *
-# ********************************************************
+RUN usermod -a -G kvm,i2c,sgx $USERNAME
+RUN ln -s /dev/gpiochip0 /dev/gpiochip4 
 
-# [Optional] Set the default user. Omit if you want to keep the default as root.
 USER $USERNAME
-RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+WORKDIR /home/$USERNAME
+COPY .bashrc . 
 CMD ["/bin/bash"]
