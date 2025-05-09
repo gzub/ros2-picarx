@@ -19,6 +19,11 @@ def generate_launch_description():
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/picarx.ai_camera.launch.py"]
+                )
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
                     [
                         FindPackageShare("object_avoidence"),
                         "/launch/object_avoidence.launch.py",

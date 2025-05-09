@@ -1,7 +1,41 @@
-log/
-*.log
-.vscode/
-*.pyc
-__pycache__/
+
+
+
+# ROS2-specific
+.colcon/
+ros2_ws/
 build/
 install/
+log/
+
+# Python specific
+__pycache__/
+venv/
+.env/
+*.pyc
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+
+# Test artifacts
+*.pytest_cache/
+.tox/
+
+# IDE-specific
+.idea/
+*.iml
+.vscode/
+
+# Miscellaneous
+*.DS_Store
+Thumbs.db
+*.log
+image_out/
