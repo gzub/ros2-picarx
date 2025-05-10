@@ -6,13 +6,11 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
-                package="picarx",
-                executable="picarx_ultrasonic",
-                name="picarx_ultrasonic_node",
+                package="web_video_server",
+                executable="web_video_server",
+                name="picarx_web_video_server_node",
                 output="both",
-                parameters=[
-                    # Add parameters here if needed, e.g., {'param_name': 'value'}
-                ],
+                parameters=[],
                 remappings=[
                     # Add topic remappings here if needed, e.g., ('/old_topic', '/new_topic')
                 ],

@@ -33,7 +33,7 @@ class ObjectAvoidanceNode(Node):
         Callback function for the ultrasonic sensor topic.
         """
         try:
-            self.get_logger().info("Received range: %.2f meters" % msg.range)
+            self.get_logger().debug("Received range: %.2f meters" % msg.range)
             if msg.range < 0.0:
                 self.get_logger().warn("Received invalid range value: %f" % msg.range)
                 return
@@ -47,7 +47,7 @@ class ObjectAvoidanceNode(Node):
 
                 self.publisher_.publish(stop_command)
             else:
-                self.get_logger().info("Object is %.2f meters away. Continuing." % msg.range)
+                self.get_logger().debug("Object is %.2f meters away. Continuing." % msg.range)
 
         except Exception as e:
             self.get_logger().error("Error in sensor callback: %s" % str(e))

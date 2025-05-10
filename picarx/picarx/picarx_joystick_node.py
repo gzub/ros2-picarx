@@ -1,3 +1,12 @@
+"""
+Picarx Joystick Node.
+
+This node subscribes to joystick inputs and publishes AckermannDrive
+commands for the PiCarX robot.
+"""
+
+import os
+from ament_index_python.packages import get_package_share_directory
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
@@ -23,7 +32,7 @@ class PicarxJoystickNode(Node):
 
     def joy_callback(self, msg: Joy):
         # Get parameters
-        self.get_logger().info(f"Received joystick message: {msg}.")
+        self.get_logger().debug(f"Received joystick message: {msg}.")
         steering_axis = self.get_parameter("steering_axis").get_parameter_value().integer_value
         throttle_axis = self.get_parameter("throttle_axis").get_parameter_value().integer_value
         max_steering_angle = self.get_parameter("max_steering_angle").get_parameter_value().double_value

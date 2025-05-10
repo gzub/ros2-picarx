@@ -120,8 +120,7 @@ rosdep install -r --from-paths src --ignore-src --rosdistro "${ROS_DISTRO}" -y \
 
 # Build the workspace
 echo "Building the workspace..."
-colcon build --symlink-install --packages-skip-build-finished --continue-on-error --packages-ignore  gz_ros2_control gz_ros2_control_demos gz_ros_control_tests
-
+colcon build --symlink-install --packages-skip-build-finished --continue-on-error --packages-ignore  gz_ros2_control gz_ros2_control_demos || true
 
 echo "Importing ros-controls repositories"
 vcs import --input "https://raw.githubusercontent.com/ros-controls/ros2_control_ci/master/ros_controls.$ROS_DISTRO.repos" src
@@ -139,13 +138,13 @@ clone_repo https://github.com/ros-perception/vision_opencv.git rolling src/visio
 clone_repo https://github.com/Kukanani/vision_msgs.git ros2 src/vision_msgs
 
 # Joystick ROS2 packages
+echo Installing Joystick
 clone_repo https://github.com/ros-drivers/joystick_drivers.git ros2 src/joystick_drivers
 
-#clone_repo https://github.com/gazebo-release/gz_transport_vendor.git rolling src/gz_transport_vendor
-#clone_repo https://github.com/gazebo-release/gz_msgs_vendor.git rolling src/gz_msgs_vendor
-#clone_repo https://github.com/gazebosim/gz-cmake.git gz-cmake4 src/gz-cmake4
-#clone_repo https://github.com/gazebosim/ros_gz.git jazzy src/ros_gz
-#vcs import --input "https://raw.githubusercontent.com/gazebo-tooling/gazebodistro/master/collection-harmonic.yaml" src
+# Web video server ROS2 packages
+echo Installing Web Video Server
+clone_repo https://github.com/fkie/async_web_server_cpp.git "ros2-develop" src/async_web_server_cpp
+clone_repo https://github.com/RobotWebTools/web_video_server.git ros2 src/web_video_server
 
 # Install dependencies
 echo "Installing ROS2 dependencies..."
@@ -154,6 +153,6 @@ rosdep install -r --from-paths src --ignore-src --rosdistro "${ROS_DISTRO}" -y \
 
 # Build the workspace
 echo "Building the workspace..."
-colcon build --symlink-install --packages-skip-build-finished --continue-on-error --packages-ignore  gz_ros2_control gz_ros2_control_demos gz_ros_control_tests
+colcon build --symlink-install --packages-skip-build-finished --continue-on-error --packages-ignore  gz_ros2_control gz_ros2_control_demos
 
 echo "ROS2 setup completed successfully!"

@@ -9,7 +9,7 @@ def generate_launch_description():
                 package="object_avoidance",
                 executable="object_avoidance",
                 name="object_avoidance_node",
-                output="screen",
+                output="both",
                 parameters=[],
                 remappings=[
                     # Add topic remappings here if needed, e.g., ('/old_topic', '/new_topic')

@@ -13,7 +13,7 @@ class PicarxAckermann(Node):
     """
 
     def __init__(self):
-        super().__init__("picarx_node")
+        super().__init__("picarx_ackermann_node")
 
         self.subscription = self.create_subscription(
             AckermannDrive, "picarx/cmd_ackermann", self.listener_callback, 10
@@ -62,7 +62,7 @@ class PicarxAckermann(Node):
         self.get_logger().info("Picarx Ackermann node has been started.")
 
     def listener_callback(self, msg):
-        self.get_logger().info(f"Picarx Ackermann node received a message: {msg.speed}, {msg.steering_angle}")
+        self.get_logger().debug(f"Picarx Ackermann node received a message: {msg.speed}, {msg.steering_angle}")
         speed = max(min(msg.speed, self.max_speed), -self.max_speed)
         steering_angle = max(
             min(msg.steering_angle, self.max_steering_angle), -self.max_steering_angle
@@ -71,14 +71,14 @@ class PicarxAckermann(Node):
         # Apply the steering angle offset
         steering_angle += self.steering_angle_offset
 
-        if steering_angle != self.current_angle:
-            self.s2.angle(steering_angle)
-            self.current_angle = steering_angle
+#        if steering_angle != self.current_angle:
+        self.s2.angle(steering_angle)
+        self.current_angle = steering_angle
 
-        if speed != self.current_speed:
-            self.m0.speed(speed)
-            self.m1.speed(speed)
-            self.current_speed = speed
+#        if speed != self.current_speed:
+        self.m0.speed(speed)
+        self.m1.speed(speed)
+        self.current_speed = speed
 
         # Publish a status message
         status_msg = AckermannDriveStamped()

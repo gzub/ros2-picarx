@@ -9,11 +9,11 @@ def generate_launch_description():
                 package="raspberrypi_ai_camera_ros2",
                 executable="object_detection_node",
                 name="picarx_rpiai_camera_node",
-                output="screen",
+                output="both",
                 parameters=[
                     {
-                        "network_package": "raspberrypi_ai_camera_ros2/networks/imx500_network_yolov8n_640x640_pp.rpk",
-                        "labels_file": "raspberrypi_ai_camera_ros2/labels/coco_yolo.txt",
+                        "network_package": "/home/gzub/ros2-picarx/src/raspberrypi_ai_camera_ros2/networks/imx500_network_yolov8n_640x640_pp.rpk",
+                        "labels_file": "/home/gzub/ros2-picarx/src/raspberrypi_ai_camera_ros2/labels/coco_yolo.txt",
                         "frame_id": "camera_frame",
                         "detection_threshold": 0.60,
                         "iou_threshold": 0.70,

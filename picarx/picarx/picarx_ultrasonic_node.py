@@ -21,12 +21,16 @@ class PicarxUltrasonicPublisher(Node):
         self.publisher = self.create_publisher(Range, "picarx/ultrasonic_sensor", 10)
         try:
             Device.pin_factory = LGPIOFactory()
-            print("LGPIOFactory initialized successfully.")
+            self.get_logger().info("LGPIOFactory initialized successfully.")
         except Exception as e:
-            print(f"Failed to initialize LGPIOFactory: {e}")
+            self.get_logger().error(f"Failed to initialize LGPIOFactory: {e}")
         try:
-            trig_pin = self.declare_parameter("trig_pin", "D2").value
-            echo_pin = self.declare_parameter("echo_pin", "D3").value
+            trig_pin = self.declare_parameter(
+                "trig_pin", "D2", descriptor=rclpy.parameter.ParameterDescriptor(description="GPIO pin for the ultrasonic sensor trigger")
+            ).value
+            echo_pin = self.declare_parameter(
+                "echo_pin", "D3", descriptor=rclpy.parameter.ParameterDescriptor(description="GPIO pin for the ultrasonic sensor echo")
+            ).value
 
             self.ultrasonic_sensor = Ultrasonic(
                 trig=Pin(trig_pin), echo=Pin(echo_pin), timeout=0.055
@@ -37,7 +41,16 @@ class PicarxUltrasonicPublisher(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to initialize Ultrasonic sensor: {e}")
             self.ultrasonic_sensor = None
-        timer_period = self.declare_parameter("timer_period", 1.0).value
+
+        if self.ultrasonic_sensor is None:
+            self.get_logger().error("Ultrasonic sensor initialization failed. Shutting down the node.")
+            rclpy.shutdown()
+            self.get_logger().info("Node shutdown complete.")
+            return
+
+        timer_period = self.declare_parameter(
+            "timer_period", 1.0, descriptor=rclpy.parameter.ParameterDescriptor(description="Timer period for publishing sensor data (in seconds)")
+        ).value
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         self.get_logger().info("Picarx Ultrasonic Publisher has been started.")
@@ -48,12 +61,16 @@ class PicarxUltrasonicPublisher(Node):
             self.get_logger().error("Ultrasonic sensor is not initialized.")
             return
 
-        range = self.ultrasonic_sensor.read()
+        try:
+            range = self.ultrasonic_sensor.read()
+        except Exception as e:
+            self.get_logger().error(f"Error reading from ultrasonic sensor: {e}")
+            return
 
         # Publish a status message
         if range > 0:
             range = range / 100.0  # Convert from cm to meters
-            self.get_logger().info(f"Range: {range} meters")
+            self.get_logger().debug(f"Range: {range} meters")
             range_msg = Range()
             range_msg.header.stamp = self.get_clock().now().to_msg()
             range_msg.radiation_type = Range.ULTRASOUND
@@ -62,14 +79,18 @@ class PicarxUltrasonicPublisher(Node):
             range_msg.range = range
             self.publisher.publish(range_msg)
         elif range == -1:
-            self.get_logger().info("Ultrasonic sensor reading error.")
+            self.get_logger().debug("Ultrasonic sensor reading error.")
         elif range == -2:
-            self.get_logger().info("Ultrasonic sensor pulse error.")
+            self.get_logger().debug("Ultrasonic sensor pulse error.")
 
     def destroy_node(self):
         self.get_logger().info("Shutting down Picarx Ultrasonic Publisher.")
         if self.ultrasonic_sensor:
-            self.ultrasonic_sensor.close()
+            try:
+                self.ultrasonic_sensor.close()
+                self.get_logger().info("Ultrasonic sensor closed successfully.")
+            except Exception as e:
+                self.get_logger().error(f"Failed to close Ultrasonic sensor: {e}")
         super().destroy_node()
 
 

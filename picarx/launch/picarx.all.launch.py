@@ -23,6 +23,11 @@ def generate_launch_description():
                     [FindPackageShare("picarx"), "/launch/picarx.ai_camera.launch.py"]
                 )
             ),
+             IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/picarx.web_video_server.launch.py"]
+                )
+            ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     [FindPackageShare("picarx"), "/launch/picarx.joystick.launch.py"]
