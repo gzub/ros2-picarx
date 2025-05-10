@@ -22,7 +22,7 @@ class PicarxAckermann(Node):
             AckermannDriveStamped, "picarx/robot_status", 10
         )
         # Declare parameters for limits and calibration
-        self.declare_parameter("max_speed", 100.0)  # Maximum speed
+        self.declare_parameter("max_speed", 200.0)  # Maximum speed
         self.declare_parameter(
             "max_steering_angle", 45.0
         )  # Maximum steering angle in degrees
@@ -49,19 +49,20 @@ class PicarxAckermann(Node):
             self.m0 = Motor(PWM("P12"), Pin("D5"))
             self.m1 = Motor(PWM("P13"), Pin("D4"), is_reversed=True)
             self.s2 = Servo(2)
-            self.m0.speed(0)
-            self.m1.speed(0)
+            self.m0.speed(0.0)
+            self.m1.speed(0.0)
             self.s2.angle(self.steering_angle_offset)
         except Exception as e:
             self.get_logger().error(f"Failed to initialize motors or servos: {e}")
             raise
 
-        self.current_speed = 0
-        self.current_angle = 0
+        self.current_speed = 0.0
+        self.current_angle = 0.0
 
         self.get_logger().info("Picarx Ackermann node has been started.")
 
     def listener_callback(self, msg):
+        self.get_logger().info(f"Picarx Ackermann node received a message: {msg.speed}, {msg.steering_angle}")
         speed = max(min(msg.speed, self.max_speed), -self.max_speed)
         steering_angle = max(
             min(msg.steering_angle, self.max_steering_angle), -self.max_steering_angle

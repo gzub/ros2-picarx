@@ -1,9 +1,0 @@
-<library path="robot_hat_interface">
-  <class name="robot_hat_interface/RobotHatHardware" 
-         type="robot_hat_interface::RobotHatHardware"
-         base_class_type="hardware_interface::SystemInterface">
-    <description>
-      Hardware interface for SunFounder Robot HAT V4
-    </description>
-  </class>
-</library>

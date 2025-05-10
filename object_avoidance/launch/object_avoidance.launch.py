@@ -6,7 +6,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
-                package="object_avoidence",
+                package="object_avoidance",
                 executable="object_avoidance",
                 name="object_avoidance_node",
                 output="screen",

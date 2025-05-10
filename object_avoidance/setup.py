@@ -1,7 +1,7 @@
 import glob
 from setuptools import find_packages, setup
 
-package_name = "object_avoidence"
+package_name = "object_avoidance"
 
 setup(
     name=package_name,
@@ -24,7 +24,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "object_avoidance = object_avoidence.object_avoidence:main"  # ROS 2 node entry point
+            "object_avoidance = object_avoidance.object_avoidance:main"  # ROS 2 node entry point
         ],
     },
 )

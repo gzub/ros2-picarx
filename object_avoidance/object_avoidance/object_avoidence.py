@@ -5,10 +5,10 @@ from rclpy.qos import QoSProfile
 from ackermann_msgs.msg import AckermannDrive  # Assuming standard Ackermann topic
 from sensor_msgs.msg import Range
 
-class ObstacleAvoidanceNode(Node):
+class ObjectAvoidanceNode(Node):
 
     def __init__(self):
-        super().__init__("obstacle_avoidance")
+        super().__init__("object_avoidance")
 
         # Define QoS profile
         qos_profile = QoSProfile(depth=10)
@@ -55,7 +55,7 @@ class ObstacleAvoidanceNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ObstacleAvoidanceNode()
+    node = ObjectAvoidanceNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
