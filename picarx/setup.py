@@ -27,6 +27,6 @@ setup(
             "picarx_ackermann = picarx.picarx_ackermann_node:main",  # ROS 2 node entry point
             "picarx_ultrasonic = picarx.picarx_ultrasonic_node:main",  # ROS 2 node entry point
             "picarx_joystick = picarx.picarx_joystick_node:main",  # ROS 2 node entry point
-        ],
+            "picarx_grayscale = picarx.picarx_grayscale_node:main",        ],
     },
 )

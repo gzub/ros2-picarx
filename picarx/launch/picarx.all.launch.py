@@ -20,6 +20,11 @@ def generate_launch_description():
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/picarx.grayscale.launch.py"]
+                )
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
                     [FindPackageShare("picarx"), "/launch/picarx.ai_camera.launch.py"]
                 )
             ),

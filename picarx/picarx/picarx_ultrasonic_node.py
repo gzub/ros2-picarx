@@ -25,12 +25,8 @@ class PicarxUltrasonicPublisher(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to initialize LGPIOFactory: {e}")
         try:
-            trig_pin = self.declare_parameter(
-                "trig_pin", "D2", descriptor=rclpy.parameter.ParameterDescriptor(description="GPIO pin for the ultrasonic sensor trigger")
-            ).value
-            echo_pin = self.declare_parameter(
-                "echo_pin", "D3", descriptor=rclpy.parameter.ParameterDescriptor(description="GPIO pin for the ultrasonic sensor echo")
-            ).value
+            trig_pin = self.declare_parameter("trig_pin", "D2").value
+            echo_pin = self.declare_parameter("echo_pin", "D3").value
 
             self.ultrasonic_sensor = Ultrasonic(
                 trig=Pin(trig_pin), echo=Pin(echo_pin), timeout=0.055
@@ -43,14 +39,17 @@ class PicarxUltrasonicPublisher(Node):
             self.ultrasonic_sensor = None
 
         if self.ultrasonic_sensor is None:
-            self.get_logger().error("Ultrasonic sensor initialization failed. Shutting down the node.")
+            self.get_logger().error(
+                "Ultrasonic sensor initialization failed. Shutting down the node."
+            )
             rclpy.shutdown()
             self.get_logger().info("Node shutdown complete.")
             return
 
         timer_period = self.declare_parameter(
-            "timer_period", 1.0, descriptor=rclpy.parameter.ParameterDescriptor(description="Timer period for publishing sensor data (in seconds)")
-        ).value
+            "timer_period",
+            1.0
+            ).value
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         self.get_logger().info("Picarx Ultrasonic Publisher has been started.")
