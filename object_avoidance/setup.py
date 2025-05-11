@@ -1,17 +1,24 @@
+"""
+Setup script for the object_avoidance ROS 2 package.
+
+This script configures the installation of the object_avoidance package,
+including Python modules, launch files, and entry points for ROS 2 nodes.
+"""
+
 import glob
 from setuptools import find_packages, setup
 
-package_name = "object_avoidance"
+PACKAGE_NAME = "object_avoidance"
 
 setup(
-    name=package_name,
+    name=PACKAGE_NAME,
     version="0.0.0",
     packages=find_packages(exclude=["test"]),
     data_files=[
-        ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
-        ("share/" + package_name, ["package.xml"]),
+        ("share/ament_index/resource_index/packages", ["resource/" + PACKAGE_NAME]),
+        ("share/" + PACKAGE_NAME, ["package.xml"]),
         (
-            "share/" + package_name + "/launch",
+            "share/" + PACKAGE_NAME + "/launch",
             glob.glob("launch/*.launch.py"),
         ),  # Corrected launch file installation
     ],

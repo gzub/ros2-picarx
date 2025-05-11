@@ -2,11 +2,10 @@ picarx_joystick_node:
   ros__parameters:
     steering_axis: 2
     throttle_axis: 1
-    max_steering_angle: 45.0
+    max_steering_angle: 25.0
     max_speed: 100.0
     reverse_steering: true
 
 joy_linux_node:
   ros__parameters:
     device: /dev/input/event6
-    deadzone: 0.05
