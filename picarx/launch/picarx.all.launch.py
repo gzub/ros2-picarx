@@ -47,7 +47,10 @@ def generate_launch_description():
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    [FindPackageShare("picarx"), "/launch/picarx.web_video_server.launch.py"]
+                    [
+                        FindPackageShare("picarx"),
+                        "/launch/picarx.web_video_server.launch.py",
+                    ]
                 )
             ),
             IncludeLaunchDescription(
@@ -58,7 +61,7 @@ def generate_launch_description():
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     [
-                        FindPackageShare("object_avoidance"),
+                        FindPackageShare("picarx"),
                         "/launch/object_avoidance.launch.py",
                     ]
                 )
