@@ -67,7 +67,6 @@ class ObjectAvoidanceNode(Node):
             msg (Range): The incoming ultrasonic sensor message.
         """
         try:
-            min_distance = self.get_parameter("min_distance").value
             if msg.range < 0.0:
                 self.get_logger().warn(f"Received invalid range value: {msg.range:.2f}")
                 return
@@ -99,10 +98,20 @@ def main(args=None):
     ensures proper cleanup during shutdown.
     """
     rclpy.init(args=args)
-    node = ObjectAvoidanceNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    node = None
+    try:
+        node = ObjectAvoidanceNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node:
+            node.get_logger().info("Shutting down...")
+    except Exception as e:
+        if node:
+            node.get_logger().error(f"Unhandled exception: {e}")
+    finally:
+        if node:
+            node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

@@ -42,6 +42,16 @@ def generate_launch_description():
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/picarx.sysinfo.launch.py"]
+                )
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/picarx.speak_detections.launch.py"]
+                )
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
                     [FindPackageShare("picarx"), "/launch/picarx.ai_camera.launch.py"]
                 )
             ),

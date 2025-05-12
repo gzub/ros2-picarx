@@ -40,6 +40,8 @@ setup(
             "picarx_ultrasonic = picarx.picarx_ultrasonic_node:main",
             "picarx_joystick = picarx.picarx_joystick_node:main",
             "picarx_grayscale = picarx.picarx_grayscale_node:main",
+            "picarx_sysinfo = picarx.picarx_sysinfo_node:main",
+            "picarx_speak_detections = picarx.picarx_speak_detections_node:main",
             "object_avoidance = picarx.object_avoidance:main"
         ],
     },

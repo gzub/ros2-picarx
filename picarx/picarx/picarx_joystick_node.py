@@ -140,7 +140,17 @@ def main(args=None):
     ensures proper cleanup during shutdown.
     """
     rclpy.init(args=args)
-    node = PicarxJoystickNode()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    node = None
+    try:
+        node = PicarxJoystickNode()
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node:
+            node.get_logger().info("Shutting down...")
+    except Exception as e:
+        if node:
+            node.get_logger().error(f"Unhandled exception: {e}")
+    finally:
+        if node:
+            node.destroy_node()
+        rclpy.shutdown()

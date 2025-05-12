@@ -100,10 +100,10 @@ class PicarxAckermann(Node):
         self.declare_parameter("motor_1_dir_pin", "D4")
         self.declare_parameter("servo_pin", 2)
         self.declare_parameter(
-            "wheelbase", 0.3
+            "wheelbase", 0.4
         )  # Distance between front and rear axles (in meters)
         self.declare_parameter(
-            "track_length", 0.2
+            "track_length", 0.3
         )  # Distance between left and right wheels (in meters)
 
         self.max_speed = (
@@ -210,7 +210,7 @@ class PicarxAckermann(Node):
                 right_speed *= scaling_factor
 
             if speed:
-                self.get_logger().debug(c
+                self.get_logger().debug(
                     f"Commanded Speed: {speed:.2f}, Left speed: {left_speed:.2f}, Right speed: {right_speed:.2f}, Steering Angle: {steering_angle:.2f}"
                 )
 
@@ -274,14 +274,20 @@ def main(args=None):
     ensures proper cleanup during shutdown.
     """
     rclpy.init(args=args)
-    node = PicarxAckermann()
+    node = None
     try:
+        node = PicarxAckermann()
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("Shutting down...")
+        if node:
+            node.get_logger().info("Shutting down...")
+    except Exception as e:
+        if node:
+            node.get_logger().error(f"Unhandled exception: {e}")
     finally:
-        node.stop_motors()
-        node.destroy_node()
+        if node:
+            node.stop_motors()
+            node.destroy_node()
         rclpy.shutdown()
 
 

@@ -2,4 +2,4 @@ picarx_ackermann_node:
   ros__parameters:
     max_speed: 100.0
     max_steering_angle: 25.0
-    steering_angle_offset: -9.0
+    steering_angle_offset: -8.5

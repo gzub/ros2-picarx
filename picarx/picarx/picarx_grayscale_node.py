@@ -177,13 +177,17 @@ def main(args=None):
     ensures proper cleanup during shutdown.
     """
     rclpy.init(args=args)
+    node = None
     try:
         node = PicarxGrayscaleNode()
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        if node:
+            node.get_logger().info("Shutting down...")
     except Exception as e:
         getLogger().error("Unhandled exception: %s", e)
     finally:
-        if "node" in locals():
+        if node:
             node.destroy_node()
         rclpy.shutdown()
 

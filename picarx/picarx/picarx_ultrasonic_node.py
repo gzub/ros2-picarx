@@ -13,6 +13,7 @@ References:
 """
 
 import threading
+from typing import Optional
 
 import rclpy
 from gpiozero import Device
@@ -20,8 +21,12 @@ from gpiozero.pins.lgpio import LGPIOFactory
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Range
+from rcl_interfaces.msg import ParameterDescriptor, ParameterType
 
 from robot_hat import Pin, Ultrasonic
+
+# Move valid_pins to module-level constant for clarity
+VALID_PICARX_PINS = {"D0", "D1", "D2", "D3"}
 
 
 class PicarxUltrasonicPublisher(Node):
@@ -43,6 +48,55 @@ class PicarxUltrasonicPublisher(Node):
         self.lock = threading.Lock()
         self.previous_range = None
 
+        # Declare parameters for timer period, min range, max range, and hysteresis threshold
+        timer_period = self.declare_parameter(
+            "timer_period",
+            1.0,
+            ParameterDescriptor(type=ParameterType.PARAMETER_DOUBLE),
+        ).value
+        self.min_range = self.declare_parameter(
+            "min_range", 0.02, ParameterDescriptor(type=ParameterType.PARAMETER_DOUBLE)
+        ).value
+        self.max_range = self.declare_parameter(
+            "max_range", 4.0, ParameterDescriptor(type=ParameterType.PARAMETER_DOUBLE)
+        ).value
+        self.field_of_view = self.declare_parameter(
+            "field_of_view",
+            0.2618,
+            ParameterDescriptor(type=ParameterType.PARAMETER_DOUBLE),
+        ).value
+        self.sensor_timeout = self.declare_parameter(
+            "sensor_timeout",
+            0.055,
+            ParameterDescriptor(type=ParameterType.PARAMETER_DOUBLE),
+        ).value
+        self.hysteresis_threshold = self.declare_parameter(
+            "hysteresis_threshold",
+            0.05,
+            ParameterDescriptor(type=ParameterType.PARAMETER_DOUBLE),
+        ).value
+        trig_pin = self.declare_parameter(
+            "trig_pin", "D2", ParameterDescriptor(type=ParameterType.PARAMETER_STRING)
+        ).value
+        echo_pin = self.declare_parameter(
+            "echo_pin", "D3", ParameterDescriptor(type=ParameterType.PARAMETER_STRING)
+        ).value
+
+        self.get_logger().info(
+            f"Parameters: trig_pin={trig_pin}, echo_pin={echo_pin}, "
+            f"min_range={self.min_range}, max_range={self.max_range}, "
+            f"field_of_view={self.field_of_view}, sensor_timeout={self.sensor_timeout}, "
+            f"hysteresis_threshold={self.hysteresis_threshold}"
+        )
+
+        # Use module-level constant for valid pins
+        if trig_pin not in VALID_PICARX_PINS or echo_pin not in VALID_PICARX_PINS:
+            self.get_logger().error(
+                f"Invalid trig_pin or echo_pin: {trig_pin}, {echo_pin}"
+            )
+            rclpy.shutdown()
+            return
+
         self.publisher = self.create_publisher(
             Range, "picarx/ultrasonic_sensor", qos_profile_sensor_data
         )
@@ -50,19 +104,20 @@ class PicarxUltrasonicPublisher(Node):
             Device.pin_factory = LGPIOFactory()
             self.get_logger().info("LGPIOFactory initialized successfully.")
         except Exception as e:
-            self.get_logger().error(f"Failed to initialize LGPIOFactory: {e}")
+            self.get_logger().error(
+                f"Failed to initialize LGPIOFactory: {type(e).__name__}: {e}"
+            )
         try:
-            trig_pin = self.declare_parameter("trig_pin", "D2").value
-            echo_pin = self.declare_parameter("echo_pin", "D3").value
-
             self.ultrasonic_sensor = Ultrasonic(
-                trig=Pin(trig_pin), echo=Pin(echo_pin), timeout=0.055
+                trig=Pin(trig_pin), echo=Pin(echo_pin), timeout=self.sensor_timeout
             )
             self.get_logger().info(
                 f"Ultrasonic sensor initialized with trig={trig_pin}, echo={echo_pin}."
             )
         except Exception as e:
-            self.get_logger().error(f"Failed to initialize Ultrasonic sensor: {e}")
+            self.get_logger().error(
+                f"Failed to initialize Ultrasonic sensor: {type(e).__name__}: {e}"
+            )
             self.ultrasonic_sensor = None
 
         if self.ultrasonic_sensor is None:
@@ -70,22 +125,12 @@ class PicarxUltrasonicPublisher(Node):
                 "Ultrasonic sensor initialization failed. Shutting down the node."
             )
             rclpy.shutdown()
-            self.get_logger().info("Node shutdown complete.")
-            return
-
-        # Declare parameters for timer period, min range, max range, and hysteresis threshold
-        timer_period = self.declare_parameter("timer_period", 1.0).value
-        self.min_range = self.declare_parameter("min_range", 0.02).value
-        self.max_range = self.declare_parameter("max_range", 5.0).value
-        self.hysteresis_threshold = self.declare_parameter(
-            "hysteresis_threshold", 0.05
-        ).value
+            return  # Ensure no further code is executed
 
         self.timer = self.create_timer(timer_period, self.timer_callback)
-
         self.get_logger().info("Picarx Ultrasonic Publisher has been started.")
 
-    def timer_callback(self):
+    def timer_callback(self) -> None:
         """
         Timer callback to read and publish filtered ultrasonic sensor data.
 
@@ -100,36 +145,40 @@ class PicarxUltrasonicPublisher(Node):
                 return
 
             try:
-                range = self.ultrasonic_sensor.read()
+                range_ = self.ultrasonic_sensor.read()
             except Exception as e:
-                self.get_logger().error(f"Error reading from ultrasonic sensor: {e}")
+                self.get_logger().error(
+                    f"Error reading from ultrasonic sensor: {type(e).__name__}: {e}"
+                )
                 return
 
             # Apply hysteresis filter
-            if range > 0:
-                range = range / 100.0  # Convert from cm to meters
-                if self.previous_range is None or abs(range - self.previous_range) > (
+            if range_ > 0:
+                range_ = range_ / 100.0  # Convert from cm to meters
+                if self.previous_range is None or abs(range_ - self.previous_range) > (
                     self.hysteresis_threshold * self.previous_range
                 ):
-                    self.previous_range = range
-                    self.get_logger().debug(f"Filtered Range: {range} meters")
+                    self.previous_range = range_
+                    self.get_logger().debug(f"Filtered Range: {range_} meters")
                     range_msg = Range()
                     range_msg.header.stamp = self.get_clock().now().to_msg()
                     range_msg.radiation_type = Range.ULTRASOUND
+                    range_msg.field_of_view = self.field_of_view
                     range_msg.min_range = self.min_range  # Use parameterized min range
                     range_msg.max_range = self.max_range  # Use parameterized max range
-                    range_msg.range = range
+                    range_msg.range = range_
+                    range_msg.variance = 0.0
                     self.publisher.publish(range_msg)
                 else:
                     self.get_logger().debug(
-                        f"Range change below hysteresis threshold: {range} meters"
+                        f"Range change below hysteresis threshold: {range_} meters"
                     )
-            elif range == -1:
+            elif range_ == -1:
                 self.get_logger().debug("Ultrasonic sensor reading error.")
-            elif range == -2:
+            elif range_ == -2:
                 self.get_logger().debug("Ultrasonic sensor pulse error.")
 
-    def destroy_node(self):
+    def destroy_node(self) -> None:
         """
         Cleans up resources before shutting down the node.
         """
@@ -145,13 +194,19 @@ def main(args=None):
     ensures proper cleanup during shutdown.
     """
     rclpy.init(args=args)
-    node = PicarxUltrasonicPublisher()
+    node = None
     try:
+        node = PicarxUltrasonicPublisher()
         rclpy.spin(node)
     except KeyboardInterrupt:
-        pass
+        if node:
+            node.get_logger().info("Shutting down...")
+    except Exception as e:
+        if node:
+            node.get_logger().error(f"Unhandled exception: {e}")
     finally:
-        node.destroy_node()
+        if node:
+            node.destroy_node()
         rclpy.shutdown()
 
 
