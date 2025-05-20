@@ -7,6 +7,8 @@ It is designed for use on Raspberry Pi OS (Pi 5) and is compatible with ROS 2 Ja
 
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+import os
 
 
 def generate_launch_description():
@@ -16,14 +18,17 @@ def generate_launch_description():
     Returns:
         LaunchDescription: The launch description object for the ROS 2 launch system.
     """
+    config_path = os.path.join(
+        get_package_share_directory("picarx"), "config", "detections.yaml"
+    )
     return LaunchDescription(
         [
             Node(
                 package="picarx",
-                executable="picarx_speak_detections",
-                name="picarx_speak_detections_node",
+                executable="picarx_detections",
+                name="picarx_detections_node",
                 output="both",
-                parameters=[],
+                parameters=[config_path],
             )
         ]
     )

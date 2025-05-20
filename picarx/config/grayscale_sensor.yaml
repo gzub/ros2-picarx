@@ -1,0 +1,8 @@
+# Grayscale Sensor Node Parameters for PiCarX
+# Indent: 2 spaces
+# ROS 2 YAML parameter file
+
+picarx_grayscale_node:
+  ros__parameters:
+    adc_pins: [0, 1, 2]
+    reference_values: [500, 500, 500]

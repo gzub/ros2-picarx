@@ -22,7 +22,7 @@ def generate_launch_description():
         LaunchDescription: The launch description object for ROS 2 launch system.
     """
     parameter_path = os.path.join(
-        get_package_share_directory("picarx"), "config", "picarx_ackermann_node.yaml"
+        get_package_share_directory("picarx"), "config", "ackermann.yaml"
     )
 
     return LaunchDescription(

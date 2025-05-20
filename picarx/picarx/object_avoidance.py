@@ -52,9 +52,9 @@ class ObjectAvoidanceNode(Node):
             AckermannDrive, "picarx/cmd_ackermann", qos_profile
         )
 
-        # Define minimum distance parameter
-        self.declare_parameter("min_distance", 0.5)  # meters
-        self.min_distance = self.get_parameter("min_distance").value
+        # Use parameter name consistent with YAML config
+        self.declare_parameter("min_obstacle_distance", 0.3)
+        self.min_distance = self.get_parameter("min_obstacle_distance").value
 
     def sensor_callback(self, msg: Range) -> None:
         """

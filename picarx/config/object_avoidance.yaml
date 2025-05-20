@@ -1,0 +1,12 @@
+# Object Avoidance Node Parameters for PiCarX
+# Indent: 2 spaces
+# ROS 2 YAML parameter file
+
+object_avoidance_node:
+  ros__parameters:
+    # Example parameters (customize as needed)
+    min_obstacle_distance: 0.3  # meters
+    max_linear_speed: 0.5       # m/s
+    max_angular_speed: 1.0      # rad/s
+    avoidance_strategy: "stop_and_turn"
+    # Add more parameters as required by your node

@@ -14,12 +14,12 @@ PACKAGE_NAME = "picarx"
 setup(
     name=PACKAGE_NAME,
     version="0.0.1",
-    packages=find_packages(exclude=['test']),
+    packages=find_packages(exclude=["test"]),
     data_files=[
-        ('share/ament_index/resource_index/packages', ['resource/' + PACKAGE_NAME]),
-        ('share/' + PACKAGE_NAME, ['package.xml']),
-        ('share/' + PACKAGE_NAME + '/launch', glob.glob('launch/*.launch.py')),
-        ('share/' + PACKAGE_NAME + '/config', glob.glob('config/*.yaml')),
+        ("share/ament_index/resource_index/packages", ["resource/" + PACKAGE_NAME]),
+        ("share/" + PACKAGE_NAME, ["package.xml"]),
+        ("share/" + PACKAGE_NAME + "/launch", glob.glob("launch/*.launch.py")),
+        ("share/" + PACKAGE_NAME + "/config", glob.glob("config/*.yaml")),
     ],
     install_requires=[
         "setuptools",
@@ -27,6 +27,7 @@ setup(
         "gpiozero",
         "ackermann_msgs",
         "std_msgs",
+        "sparkfun-qwiic-icm20948",
     ],
     zip_safe=True,
     maintainer="Geoffrey Zub",
@@ -41,8 +42,10 @@ setup(
             "picarx_joystick = picarx.picarx_joystick_node:main",
             "picarx_grayscale = picarx.picarx_grayscale_node:main",
             "picarx_sysinfo = picarx.picarx_sysinfo_node:main",
-            "picarx_speak_detections = picarx.picarx_speak_detections_node:main",
-            "object_avoidance = picarx.object_avoidance:main"
+            "picarx_detections = picarx.picarx_detections_node:main",
+            "object_avoidance = picarx.object_avoidance:main",
+            "picarx_pantilt = picarx.picarx_pantilt_node:main",
+            "icm20948_node = picarx.icm20948_node:main",
         ],
     },
 )

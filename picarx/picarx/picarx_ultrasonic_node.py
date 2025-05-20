@@ -13,7 +13,6 @@ References:
 """
 
 import threading
-from typing import Optional
 
 import rclpy
 from gpiozero import Device
@@ -90,10 +89,13 @@ class PicarxUltrasonicPublisher(Node):
         )
 
         # Use module-level constant for valid pins
-        if trig_pin not in VALID_PICARX_PINS or echo_pin not in VALID_PICARX_PINS:
-            self.get_logger().error(
-                f"Invalid trig_pin or echo_pin: {trig_pin}, {echo_pin}"
-            )
+        invalid_pins = []
+        if trig_pin not in VALID_PICARX_PINS:
+            invalid_pins.append(f"trig_pin={trig_pin}")
+        if echo_pin not in VALID_PICARX_PINS:
+            invalid_pins.append(f"echo_pin={echo_pin}")
+        if invalid_pins:
+            self.get_logger().error(f"Invalid pin(s): {', '.join(invalid_pins)}")
             rclpy.shutdown()
             return
 
@@ -139,13 +141,17 @@ class PicarxUltrasonicPublisher(Node):
         as a sensor_msgs/Range message.
         """
         with self.lock:
-            # Log the received values
             if self.ultrasonic_sensor is None:
                 self.get_logger().error("Ultrasonic sensor is not initialized.")
                 return
 
             try:
                 range_ = self.ultrasonic_sensor.read()
+                if range_ < 0 or range_ > (
+                    self.max_range * 100
+                ):  # Convert max_range to cm
+                    self.get_logger().debug(f"Invalid range value: {range_} cm")
+                    return
             except Exception as e:
                 self.get_logger().error(
                     f"Error reading from ultrasonic sensor: {type(e).__name__}: {e}"
@@ -193,6 +199,7 @@ def main(args=None):
     Initializes the ROS 2 node, spins it to process incoming messages, and
     ensures proper cleanup during shutdown.
     """
+
     rclpy.init(args=args)
     node = None
     try:
@@ -204,9 +211,7 @@ def main(args=None):
     except Exception as e:
         if node:
             node.get_logger().error(f"Unhandled exception: {e}")
-    finally:
-        if node:
-            node.destroy_node()
+
         rclpy.shutdown()
 
 

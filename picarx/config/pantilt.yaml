@@ -1,0 +1,10 @@
+picarx_pantilt_node:
+  ros__parameters:
+    pan_servo_index: 0
+    tilt_servo_index: 1
+    pan_min_angle: -80.0
+    pan_max_angle: 80.0
+    tilt_min_angle: -30.0
+    tilt_max_angle: 60.0
+    initial_pan: 0.0      # Initial pan angle in degrees
+    initial_tilt: 30.0     # Initial tilt angle in degrees

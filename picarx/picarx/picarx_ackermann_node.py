@@ -291,5 +291,6 @@ def main(args=None):
         rclpy.shutdown()
 
 
+# This block ensures that the main function is executed only when the script is run directly.
 if __name__ == "__main__":
     main()

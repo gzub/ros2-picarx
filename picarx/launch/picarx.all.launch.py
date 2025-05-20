@@ -47,7 +47,7 @@ def generate_launch_description():
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    [FindPackageShare("picarx"), "/launch/picarx.speak_detections.launch.py"]
+                    [FindPackageShare("picarx"), "/launch/picarx.detections.launch.py"]
                 )
             ),
             IncludeLaunchDescription(
@@ -70,10 +70,20 @@ def generate_launch_description():
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/picarx.pantilt.launch.py"]
+                )
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
                     [
                         FindPackageShare("picarx"),
                         "/launch/object_avoidance.launch.py",
                     ]
+                )
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/icm20948.launch.py"]
                 )
             ),
         ]

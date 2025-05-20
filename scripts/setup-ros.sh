@@ -100,6 +100,9 @@ else
     pip install -e . --break-system-packages
 fi
 
+# Add SparkFun ICM20948 library
+sudo pip install --break-system-packages sparkfun-qwiic-icm20948
+
 # Clone ROS2 repositories
 cd "${WORKSPACE_DIR}"
 echo "Importing ROS2 repositories..."
