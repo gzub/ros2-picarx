@@ -149,6 +149,10 @@ echo Installing Web Video Server
 clone_repo https://github.com/fkie/async_web_server_cpp.git "ros2-develop" src/async_web_server_cpp
 clone_repo https://github.com/RobotWebTools/web_video_server.git ros2 src/web_video_server
 
+#Topic Based ROS2 Control
+echo Installing Topic Based Control
+clone_repo https://github.com/PickNikRobotics/topic_based_ros2_control.git main src/topic_based_ros2_control
+
 # Install dependencies
 echo "Installing ROS2 dependencies..."
 rosdep install -r --from-paths src --ignore-src --rosdistro "${ROS_DISTRO}" -y \

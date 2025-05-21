@@ -86,5 +86,10 @@ def generate_launch_description():
                     [FindPackageShare("picarx"), "/launch/icm20948.launch.py"]
                 )
             ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    [FindPackageShare("picarx"), "/launch/topic_controller.launch.py"]
+                )
+            ),
         ]
     )

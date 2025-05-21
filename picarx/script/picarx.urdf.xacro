@@ -1,0 +1,186 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="picarx_bot">
+
+    <!-- Properties -->
+    <xacro:property name="body_length" value="1.91" />
+    <xacro:property name="body_width" value="0.680618" />
+    <xacro:property name="body_height" value="1.065022" />
+    <xacro:property name="body_mass" value="20.3" />
+    <xacro:property name="front_wheel_width" value=".254" />
+    <xacro:property name="front_wheel_diameter" value="0.605" />
+    <xacro:property name="rear_wheel_width" value=".3175" />
+    <xacro:property name="rear_wheel_diameter" value="0.635" />
+
+    <!-- Base Link -->
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="${body_length} ${body_width} ${body_height}" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="${body_length} ${body_width} ${body_height}" />
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Steering Joints -->
+    <link name="left_steer">
+        <visual>
+            <geometry>
+                <cylinder length="0.05" radius="0.03" />
+            </geometry>
+            <material name="Blue">
+                <color rgba="0 0 1 1" />
+            </material>
+        </visual>
+    </link>
+    <link name="right_steer">
+        <visual>
+            <geometry>
+                <cylinder length="0.05" radius="0.03" />
+            </geometry>
+            <material name="Red">
+                <color rgba="1 0 0 1" />
+            </material>
+        </visual>
+    </link>
+    <joint name="left_steer_joint" type="revolute">
+        <parent link="base_link" />
+        <child link="left_steer" />
+        <axis xyz="0 0 1" />
+        <origin xyz="0.7 0.1 0.0" rpy="0 0 0" />
+        <limit lower="-0.50" upper="0.50" effort="1" velocity="3" />
+    </joint>
+    <joint name="right_steer_joint" type="revolute">
+        <parent link="base_link" />
+        <child link="right_steer" />
+        <axis xyz="0 0 1" />
+        <origin xyz="0.7 -0.1 0.0" rpy="0 0 0" />
+        <limit lower="-0.50" upper="0.50" effort="1" velocity="3" />
+    </joint>
+
+    <!-- Rear Wheels -->
+    <link name="left_rear_wheel">
+        <visual>
+            <geometry>
+                <cylinder length="${rear_wheel_width}" radius="${rear_wheel_diameter/2}" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder length="${rear_wheel_width}" radius="${rear_wheel_diameter/2}" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.5" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+    </link>
+    <link name="right_rear_wheel">
+        <visual>
+            <geometry>
+                <cylinder length="${rear_wheel_width}" radius="${rear_wheel_diameter/2}" />
+            </geometry>
+        </visual>
+        <collision>
+            <geometry>
+                <cylinder length="${rear_wheel_width}" radius="${rear_wheel_diameter/2}" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.5" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001" />
+        </inertial>
+    </link>
+    <joint name="left_rear_axle" type="continuous">
+        <parent link="base_link" />
+        <child link="left_rear_wheel" />
+        <axis xyz="0.0 0.1 0.0" />
+        <origin xyz="-0.855 0.390309 0.0" />
+    </joint>
+    <joint name="right_rear_axle" type="continuous">
+        <parent link="base_link" />
+        <child link="right_rear_wheel" />
+        <axis xyz="0.0 0.1 0.0" />
+        <origin xyz="-0.855 -0.390309 0.0" />
+    </joint>
+
+    <!-- Transmissions -->
+    <transmission name="left_steer_joint_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="left_steer_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="left_steer_joint_motor">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="right_steer_joint_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="right_steer_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="right_steer_joint_motor">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="left_rear_wheel_joint_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="left_rear_axle">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="left_rear_wheel_motor">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="right_rear_wheel_joint_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="right_rear_axle">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="right_rear_wheel_motor">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <!-- ros2_control block -->
+    <ros2_control name="picarx_system" type="system">
+        <hardware>
+            <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+            <param name="joint_commands_topic">/topic_based_joint_commands</param>
+            <param name="joint_states_topic">/topic_based_joint_states</param>
+        </hardware>
+        <joint name="left_steer_joint">
+            <command_interface name="position" />
+            <state_interface name="position">
+                <param name="initial_value">0.0</param>
+            </state_interface>
+        </joint>
+        <joint name="right_steer_joint">
+            <command_interface name="position" />
+            <state_interface name="position">
+                <param name="initial_value">0.0</param>
+            </state_interface>
+        </joint>
+        <joint name="left_rear_axle">
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>
+            </state_interface>
+            <command_interface name="velocity" />
+        </joint>
+        <joint name="right_rear_axle">
+            <state_interface name="velocity">
+                <param name="initial_value">0.0</param>
+            </state_interface>
+            <command_interface name="velocity" />
+        </joint>
+    </ros2_control>
+</robot>

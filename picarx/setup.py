@@ -19,6 +19,7 @@ setup(
         ("share/ament_index/resource_index/packages", ["resource/" + PACKAGE_NAME]),
         ("share/" + PACKAGE_NAME, ["package.xml"]),
         ("share/" + PACKAGE_NAME + "/launch", glob.glob("launch/*.launch.py")),
+        ("share/" + PACKAGE_NAME + "/script", glob.glob("script/*.xacro")),
         ("share/" + PACKAGE_NAME + "/config", glob.glob("config/*.yaml")),
     ],
     install_requires=[
