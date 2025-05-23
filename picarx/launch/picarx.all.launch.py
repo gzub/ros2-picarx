@@ -8,6 +8,7 @@ with Robot Hat v4 and ROS 2 Jazzy.
 """
 
 from launch import LaunchDescription
+from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.substitutions import FindPackageShare
@@ -25,6 +26,29 @@ def generate_launch_description():
     """
     return LaunchDescription(
         [
+                    Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='camera_pan_static_tf',
+            arguments=['0', '0', '0.05', '0', '0', '0', 'base_link', 'camera_pan_link']
+        ),
+
+        # Static transform publisher for camera_tilt_link
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='camera_tilt_static_tf',
+            arguments=['0', '0', '0.02', '0', '0', '0', 'camera_pan_link', 'camera_tilt_link']
+        ),
+
+        # Static transform publisher for camera_link
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='camera_link_static_tf',
+            arguments=['0', '0', '0.02', '0', '0', '0', 'camera_tilt_link', 'camera_link']
+        ),
+
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     [FindPackageShare("picarx"), "/launch/picarx.ackermann.launch.py"]

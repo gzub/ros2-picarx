@@ -136,7 +136,8 @@ clone_repo https://github.com/PickNikRobotics/generate_parameter_library.git mai
 clone_repo https://github.com/PickNikRobotics/cpp_polyfills.git main src/cpp_polyfills
 
 # Raspberry Pi AI Camera ROS2 packages
-clone_repo https://github.com/mzahana/raspberrypi_ai_camera_ros2.git main src/raspberrypi_ai_camera_ros2
+#clone_repo https://github.com/mzahana/raspberrypi_ai_camera_ros2.git main src/raspberrypi_ai_camera_ros2
+clone_repo https://github.com/gzub/raspberrypi_ai_camera_ros2.git main raspberrypi_ai_camera_ros2
 clone_repo https://github.com/ros-perception/vision_opencv.git rolling src/vision_opencv
 clone_repo https://github.com/Kukanani/vision_msgs.git ros2 src/vision_msgs
 

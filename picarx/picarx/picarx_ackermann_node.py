@@ -26,17 +26,12 @@ from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 
 from ackermann_msgs.msg import AckermannDrive, AckermannDriveStamped
 from robot_hat import PWM, Motor, Pin, Servo
+import sensor_msgs
+from std_msgs.msg import Float64MultiArray
 
 
 class PicarxAckermann(Node):
-    """
-    A ROS 2 node for controlling a Picar-X robot using Ackermann steering.
-
-    This node subscribes to AckermannDrive messages to control the speed and
-    steering angle of the robot. It calculates the motor speeds for the left
-    and right wheels based on the Ackermann steering model and ensures that
-    the motor speeds do not exceed the maximum speed.
-    """
+    """ROS 2 node for controlling PiCarX using Ackermann or ros2_control joint commands."""
 
     def __init__(self):
         """
@@ -60,6 +55,14 @@ class PicarxAckermann(Node):
         )
         self.publisher = self.create_publisher(
             AckermannDriveStamped, "picarx/robot_status", qos_profile
+        )
+
+        # Subscribe to topic_based_ros2_control joint commands
+        self.joint_cmd_sub = self.create_subscription(
+            sensor_msgs/msg/JointState,
+            "/topic_based_joint_commands",  # Update if your URDF/controller uses a different topic
+            self.joint_command_callback,
+            10
         )
 
         self.declare_and_get_parameters()
@@ -227,6 +230,45 @@ class PicarxAckermann(Node):
             status_msg.drive.speed = (left_speed + right_speed) / 2.0
             status_msg.drive.steering_angle = steering_angle
             self.publisher.publish(status_msg)
+
+    def joint_command_callback(self, msg):
+        """
+        Callback for joint commands from topic_based_ros2_control.
+
+        Expects msg.data = [steering_angle, left_speed, right_speed]
+        Logs the received message and the interpreted values.
+        """
+        self.get_logger().info(f"Received joint command message: {msg.data}")
+        if len(msg.data) < 3:
+            self.get_logger().warn("Received joint command with insufficient data.")
+            return
+
+        steering_angle = msg.data[0]
+        left_speed = msg.data[1]
+        right_speed = msg.data[2]
+
+        self.get_logger().info(
+            f"Parsed joint command - Steering angle: {steering_angle:.2f}, Left speed: {left_speed:.2f}, Right speed: {right_speed:.2f}"
+        )
+
+        # Clamp values to safe ranges
+        steering_angle = max(-self.max_steering_angle, min(self.max_steering_angle, steering_angle))
+        left_speed = max(-self.max_speed, min(self.max_speed, left_speed))
+        right_speed = max(-self.max_speed, min(self.max_speed, right_speed))
+
+        self.get_logger().debug(
+            f"Clamped joint command - Steering angle: {steering_angle:.2f}, Left speed: {left_speed:.2f}, Right speed: {right_speed:.2f}"
+        )
+
+        # Apply to hardware (assuming self.s0, self.m0, self.m1 are initialized)
+        self.s0.angle(steering_angle + self.steering_angle_offset)
+        self.m0.speed(left_speed)
+        self.m1.speed(right_speed)
+        self.current_speed = (left_speed + right_speed) / 2.0
+        self.current_angle = steering_angle
+
+        # Optionally publish status
+        # ...existing status publishing code...
 
     def watchdog_callback(self):
         """

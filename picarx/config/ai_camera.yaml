@@ -4,9 +4,9 @@
 
 picarx_rpiai_camera_node:
   ros__parameters:
-    network_package: "/home/gzub/ros2-picarx/src/raspberrypi_ai_camera_ros2/networks/imx500_network_yolov8n_640x640_pp.rpk"
-    labels_file: "/home/gzub/ros2-picarx/src/raspberrypi_ai_camera_ros2/labels/coco_yolo.txt"
-    frame_id: "camera_frame"
+    network_package: "/home/gzub/ros2-picarx/raspberrypi_ai_camera_ros2/networks/imx500_network_yolov8n_640x640_pp.rpk"
+    labels_file: "/home/gzub/ros2-picarx/raspberrypi_ai_camera_ros2/labels/coco_yolo.txt"
+    frame_id: "camera_link"
     detection_threshold: 0.60
     iou_threshold: 0.70
     max_detections: 15
