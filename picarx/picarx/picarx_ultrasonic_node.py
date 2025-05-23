@@ -100,7 +100,7 @@ class PicarxUltrasonicPublisher(Node):
             return
 
         self.publisher = self.create_publisher(
-            Range, "picarx/ultrasonic_sensor", qos_profile_sensor_data
+            Range, "/ultrasonic_sensor", qos_profile_sensor_data
         )
         try:
             Device.pin_factory = LGPIOFactory()
@@ -167,6 +167,7 @@ class PicarxUltrasonicPublisher(Node):
                     self.previous_range = range_
                     self.get_logger().debug(f"Filtered Range: {range_} meters")
                     range_msg = Range()
+                    range_msg.header.frame_id = "ultrasonic_link"
                     range_msg.header.stamp = self.get_clock().now().to_msg()
                     range_msg.radiation_type = Range.ULTRASOUND
                     range_msg.field_of_view = self.field_of_view

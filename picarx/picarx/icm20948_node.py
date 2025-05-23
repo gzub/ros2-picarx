@@ -46,7 +46,7 @@ class ICM20948Node(Node):
         super().__init__("icm20948_node")
         self.declare_parameter("frame_id", "imu_link")
         self.declare_parameter("i2c_bus", 1)
-        self.declare_parameter("publish_rate", 1.0)
+        self.declare_parameter("publish_rate", .05)
 
         # Use get_parameter_value().string_value for frame_id to ensure correct type for ROS Header
         self.frame_id = (
@@ -132,7 +132,7 @@ class ICM20948Node(Node):
         imu_msg.linear_acceleration_covariance = [-1.0] * 9
 
         self.imu_publisher.publish(imu_msg)
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Published IMU: accel=({imu_msg.linear_acceleration.x:.2f}, {imu_msg.linear_acceleration.y:.2f}, {imu_msg.linear_acceleration.z:.2f}) "
             f"gyro=({imu_msg.angular_velocity.x:.2f}, {imu_msg.angular_velocity.y:.2f}, {imu_msg.angular_velocity.z:.2f})"
         )
@@ -145,7 +145,7 @@ class ICM20948Node(Node):
         mag_msg.magnetic_field.y = self.imu.myRaw * 0.15 * 1e-6
         mag_msg.magnetic_field.z = -self.imu.mzRaw * 0.15 * 1e-6
         self.mag_publisher.publish(mag_msg)
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Published Mag: mag=({mag_msg.magnetic_field.x:.2e}, {mag_msg.magnetic_field.y:.2e}, {mag_msg.magnetic_field.z:.2e})"
         )
 
@@ -161,7 +161,7 @@ class ICM20948Node(Node):
             temp_msg.temperature = float("nan")
         temp_msg.variance = 0.0
         self.temp_publisher.publish(temp_msg)
-        self.get_logger().info(f"Published Temp: {temp_msg.temperature:.2f} C")
+        self.get_logger().debug(f"Published Temp: {temp_msg.temperature:.2f} C")
 
 
 def main(args=None):

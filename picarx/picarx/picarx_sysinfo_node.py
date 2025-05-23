@@ -34,11 +34,11 @@ class PicarxSysInfoNode(Node):
         """
         super().__init__("picarx_sysinfo_node")
 
-        self.temp_pub = self.create_publisher(Temperature, "picarx/cpu_temperature", 10)
-        self.loadavg1_pub = self.create_publisher(Float32, "picarx/loadavg_1min", 10)
-        self.loadavg5_pub = self.create_publisher(Float32, "picarx/loadavg_5min", 10)
-        self.loadavg15_pub = self.create_publisher(Float32, "picarx/loadavg_15min", 10)
-        self.voltage_pub = self.create_publisher(Float32, "picarx/battery_voltage", 10)
+        self.temp_pub = self.create_publisher(Temperature, "/cpu_temperature", 10)
+        self.loadavg1_pub = self.create_publisher(Float32, "/loadavg_1min", 10)
+        self.loadavg5_pub = self.create_publisher(Float32, "/loadavg_5min", 10)
+        self.loadavg15_pub = self.create_publisher(Float32, "/loadavg_15min", 10)
+        self.voltage_pub = self.create_publisher(Float32, "/battery_voltage", 10)
 
         self.timer = self.create_timer(2.0, self.timer_callback)  # 0.5 Hz
 

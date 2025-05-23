@@ -8,17 +8,19 @@ controller_manager:
 
 ackermann_steering_controller:
   ros__parameters:
-    reference_timeout: 0.5
-    steering_joints_names: ["left_steer_joint", "right_steer_joint"]
+    reference_timeout: 10.0
+    steering_joints_names: ["left_steering_joint", "right_steering_joint"]
     traction_joints_names: ["left_rear_axle", "right_rear_axle"]
-    wheelbase: 1.0 # Set to your robot's wheelbase in meters
-    track: 1.5 # Set to your robot's track width in meters
+    wheelbase: 0.10         # Set to the distance between front and rear axles in meters (adjust as needed)
+    traction_track_width: 0.115 # Set to the distance between left and right rear wheels in meters (adjust as needed)
     velocity_rolling_window_size: 10
     publish_rate: 24
-    traction_wheels_radius: 0.3175 # <-- Set to half your rear_wheel_diameter
+    use_stamped_vel: true
+    traction_wheels_radius: 0.0325 # Should match rear_wheel_diameter/2 from URDF
     open_loop: true
     enable_odom_tf: true
     base_frame_id: "base_link"
+
 joint_state_broadcaster:
   ros__parameters:
     use_sim_time: false
