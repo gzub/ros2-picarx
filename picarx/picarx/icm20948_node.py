@@ -2,7 +2,7 @@
 ICM20948 IMU ROS 2 Node for PiCarX using SparkFun Qwiic Python library.
 
 This node reads data from the SparkFun ICM20948 IMU via I2C and publishes:
-- sensor_msgs/msg/Imu on 'imu/data_raw'
+- sensor_msgs/msg/Imu on 'imu/data'
 - sensor_msgs/msg/MagneticField on 'imu/mag'
 - sensor_msgs/msg/Temperature on 'imu/temperature'
 
@@ -13,9 +13,11 @@ Parameters:
 """
 
 import math
+import threading
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Imu, MagneticField, Temperature
 from std_msgs.msg import Header
 
@@ -44,21 +46,22 @@ class ICM20948Node(Node):
         Initializes the ICM20948 sensor and starts a timer for periodic publishing.
         """
         super().__init__("icm20948_node")
+
         self.declare_parameter("frame_id", "imu_link")
         self.declare_parameter("i2c_bus", 1)
-        self.declare_parameter("publish_rate", .05)
+        self.declare_parameter("frequency", 15.0)  # Default to 15Hz for IMU
 
         # Use get_parameter_value().string_value for frame_id to ensure correct type for ROS Header
         self.frame_id = (
             self.get_parameter("frame_id").get_parameter_value().string_value
         )
         self.i2c_bus = self.get_parameter("i2c_bus").get_parameter_value().integer_value
-        self.publish_rate = (
-            self.get_parameter("publish_rate").get_parameter_value().double_value
+        self.frequency = (
+            self.get_parameter("frequency").get_parameter_value().double_value
         )
-        if self.publish_rate <= 0.0:
-            self.get_logger().warn("publish_rate must be > 0. Using 1.0 Hz.")
-            self.publish_rate = 1.0
+        if self.frequency <= 0.0:
+            self.get_logger().warn("frequency must be > 0. Using 15.0 Hz.")
+            self.frequency = 15.0
 
         if qwiic_icm20948 is None:
             self.get_logger().error(
@@ -74,94 +77,102 @@ class ICM20948Node(Node):
                 f"ICM20948 IMU not detected on I2C bus {self.i2c_bus}"
             )
             self.get_logger().error("Shutting down node due to IMU connection failure.")
-            self.destroy_node()
-            rclpy.logging.get_logger("ICM20948Node").info(
-                "Shutting down ICM20948Node..."
-            )
+            # Don't call destroy_node() before node is fully constructed
             rclpy.shutdown()
-        self.imu.begin()
+            return
+        begin_result = self.imu.begin()
+        # If begin() returns a status, check for failure (SparkFun returns True on success)
+        if begin_result is not None and begin_result is not True:
+            self.get_logger().error("ICM20948 IMU initialization failed.")
+            rclpy.shutdown()
+            return
         self.get_logger().info("ICM20948 IMU initialized.")
 
-        self.imu_publisher = self.create_publisher(Imu, "imu/data_raw", 10)
-        self.mag_publisher = self.create_publisher(MagneticField, "imu/mag", 10)
-        self.temp_publisher = self.create_publisher(Temperature, "imu/temperature", 10)
+        self.imu_publisher = self.create_publisher(
+            Imu, "imu/data_raw", qos_profile_sensor_data
+        )
+        self.mag_publisher = self.create_publisher(
+            MagneticField, "imu/mag", qos_profile_sensor_data
+        )
+        self.temp_publisher = self.create_publisher(
+            Temperature, "imu/temperature", qos_profile_sensor_data
+        )
 
-        timer_period = 1.0 / self.publish_rate
+        timer_period = 1.0 / self.frequency
         self.timer = self.create_timer(timer_period, self.publish_imu)
+        self.lock = threading.Lock()
 
     def publish_imu(self):
         """
         Read IMU, magnetometer, and temperature data from the sensor and publish as ROS 2 messages.
         """
-        if not self.imu.dataReady():
-            self.get_logger().debug("IMU data not ready.")
-            return
-        self.imu.getAgmt()  # Updates all sensor values
+        with self.lock:
+            if not self.imu.dataReady():
+                self.get_logger().debug("IMU data not ready.")
+                return
+            self.imu.getAgmt()  # Updates all sensor values
 
-        # IMU message
-        imu_msg = Imu()
-        imu_msg.header = Header()
-        imu_msg.header.stamp = self.get_clock().now().to_msg()
-        imu_msg.header.frame_id = self.frame_id
+            # sensor_msgs/msg/Imu message
+            imu_msg = Imu()
+            imu_msg.header = Header()
+            imu_msg.header.stamp = self.get_clock().now().to_msg()
+            imu_msg.header.frame_id = self.frame_id
 
-        # Angular velocity: raw → dps → rad/s
-        gx_dps = self.imu.gxRaw / 131.0
-        gy_dps = self.imu.gyRaw / 131.0
-        gz_dps = self.imu.gzRaw / 131.0
-        imu_msg.angular_velocity.x = gx_dps * (math.pi / 180.0)
-        imu_msg.angular_velocity.y = gy_dps * (math.pi / 180.0)
-        imu_msg.angular_velocity.z = -gz_dps * (math.pi / 180.0)  # Invert Z for REP-103
+            # Orientation (not provided, set to identity quaternion, unknown covariance)
+            imu_msg.orientation.x = 0.0
+            imu_msg.orientation.y = 0.0
+            imu_msg.orientation.z = 0.0
+            imu_msg.orientation.w = 0.0
+            imu_msg.orientation_covariance = [-1.0] * 9  # -1: orientation not provided
 
-        # Acceleration: raw → m/s^2, invert Z for REP-103, remove gravity
-        ax = (self.imu.axRaw / 16384.0) * 9.80665
-        ay = (self.imu.ayRaw / 16384.0) * 9.80665
-        az = -((self.imu.azRaw / 16384.0) * 9.80665) + 9.80665  # Invert Z, remove gravity
+            # Angular velocity (rad/s, REP-103: invert Z)
+            gx_dps = self.imu.gxRaw / 131.0
+            gy_dps = self.imu.gyRaw / 131.0
+            gz_dps = self.imu.gzRaw / 131.0
+            imu_msg.angular_velocity.x = float(gx_dps * (math.pi / 180.0))
+            imu_msg.angular_velocity.y = float(gy_dps * (math.pi / 180.0))
+            imu_msg.angular_velocity.z = float(-gz_dps * (math.pi / 180.0))
 
-        imu_msg.linear_acceleration.x = ax
-        imu_msg.linear_acceleration.y = ay
-        imu_msg.linear_acceleration.z = az
+            # Linear acceleration (m/s^2, REP-103: invert Z, remove gravity)
+            ax = (self.imu.axRaw / 16384.0) * 9.80665
+            ay = (self.imu.ayRaw / 16384.0) * 9.80665
+            az = -((self.imu.azRaw / 16384.0) * 9.80665) + 9.80665
+            imu_msg.linear_acceleration.x = float(ax)
+            imu_msg.linear_acceleration.y = float(ay)
+            imu_msg.linear_acceleration.z = float(az)
 
-        imu_msg.orientation.x = 0.0
-        imu_msg.orientation.y = 0.0
-        imu_msg.orientation.z = 0.0
-        imu_msg.orientation.w = 1.0
-
-        # Covariances (unknown)
-        imu_msg.orientation_covariance = [-1.0] * 9
-        imu_msg.angular_velocity_covariance = [-1.0] * 9
-        imu_msg.linear_acceleration_covariance = [-1.0] * 9
-
-        self.imu_publisher.publish(imu_msg)
-        self.get_logger().debug(
-            f"Published IMU: accel=({imu_msg.linear_acceleration.x:.2f}, {imu_msg.linear_acceleration.y:.2f}, {imu_msg.linear_acceleration.z:.2f}) "
-            f"gyro=({imu_msg.angular_velocity.x:.2f}, {imu_msg.angular_velocity.y:.2f}, {imu_msg.angular_velocity.z:.2f})"
-        )
-
-        # Magnetometer message
-        mag_msg = MagneticField()
-        mag_msg.header = imu_msg.header
-        # μT to Tesla (SI): multiply by 1e-6, invert Z for REP-103
-        mag_msg.magnetic_field.x = self.imu.mxRaw * 0.15 * 1e-6
-        mag_msg.magnetic_field.y = self.imu.myRaw * 0.15 * 1e-6
-        mag_msg.magnetic_field.z = -self.imu.mzRaw * 0.15 * 1e-6
-        self.mag_publisher.publish(mag_msg)
-        self.get_logger().debug(
-            f"Published Mag: mag=({mag_msg.magnetic_field.x:.2e}, {mag_msg.magnetic_field.y:.2e}, {mag_msg.magnetic_field.z:.2e})"
-        )
-
-        # Temperature message
-        temp_msg = Temperature()
-        temp_msg.header = imu_msg.header
-        try:
-            temp_msg.temperature = float(self.imu.tmpRaw) / 100.0
-        except Exception as e:
-            self.get_logger().error(
-                f"Failed to convert temperature: {self.imu.tmpRaw} to float: {e}"
+            self.imu_publisher.publish(imu_msg)
+            # Use debug for high-frequency topics
+            self.get_logger().debug(
+                f"Published IMU: accel=({imu_msg.linear_acceleration.x:.2f}, {imu_msg.linear_acceleration.y:.2f}, {imu_msg.linear_acceleration.z:.2f}) "
+                f"gyro=({imu_msg.angular_velocity.x:.2f}, {imu_msg.angular_velocity.y:.2f}, {imu_msg.angular_velocity.z:.2f})"
             )
-            temp_msg.temperature = float("nan")
-        temp_msg.variance = 0.0
-        self.temp_publisher.publish(temp_msg)
-        self.get_logger().debug(f"Published Temp: {temp_msg.temperature:.2f} C")
+
+            # Magnetometer message
+            mag_msg = MagneticField()
+            mag_msg.header = imu_msg.header
+            # μT to Tesla (SI): multiply by 1e-6, invert Z for REP-103
+            mag_msg.magnetic_field.x = self.imu.mxRaw * 0.15 * 1e-6
+            mag_msg.magnetic_field.y = self.imu.myRaw * 0.15 * 1e-6
+            mag_msg.magnetic_field.z = -self.imu.mzRaw * 0.15 * 1e-6
+            self.mag_publisher.publish(mag_msg)
+            self.get_logger().debug(
+                f"Published Mag: mag=({mag_msg.magnetic_field.x:.2e}, {mag_msg.magnetic_field.y:.2e}, {mag_msg.magnetic_field.z:.2e})"
+            )
+
+            # Temperature message
+            temp_msg = Temperature()
+            temp_msg.header = imu_msg.header
+            try:
+                temp_msg.temperature = float(self.imu.tmpRaw) / 100.0
+            except Exception as e:
+                self.get_logger().error(
+                    f"Failed to convert temperature: {self.imu.tmpRaw} to float: {e}"
+                )
+                temp_msg.temperature = float("nan")
+            temp_msg.variance = 0.5  # Example: set a reasonable variance
+            self.temp_publisher.publish(temp_msg)
+            self.get_logger().debug(f"Published Temp: {temp_msg.temperature:.2f} C")
 
 
 def main(args=None):

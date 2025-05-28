@@ -1,0 +1,11 @@
+build:
+  symlink-install: true
+  continue-on-error: true
+  packages-ignore: 
+    - gz_ros2_control_demos
+    - rosbag2_tests
+    - test_tracetools
+    - rosbag2_examples_cpp
+    - gz_ros2_control
+    - nav2_system_tests
+

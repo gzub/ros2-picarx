@@ -1,0 +1,5 @@
+picarx_hardware_node:
+  ros__parameters:
+    max_speed: 0.2 # m/s
+    max_steering_angle: 32.0 #degrees
+    steering_angle_offset: -6.5

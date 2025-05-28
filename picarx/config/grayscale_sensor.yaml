@@ -6,3 +6,4 @@ picarx_grayscale_node:
   ros__parameters:
     adc_pins: [0, 1, 2]
     reference_values: [500, 500, 500]
+    frequency: 20.0  # Default frequency in Hz

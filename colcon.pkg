@@ -1,0 +1,3 @@
+fastdds:
+  cmake-args:
+    - -DCMAKE_CXX_FLAGS="-Wno-error=maybe-uninitialized"

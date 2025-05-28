@@ -4,11 +4,10 @@ Launch file for the ICM20948 IMU ROS 2 node.
 This launch file starts the icm20948_node with parameters loaded from the config/icm20948.yaml file.
 """
 
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -18,8 +17,9 @@ def generate_launch_description():
     Returns:
         LaunchDescription: The launch description containing the node configuration.
     """
-    pkg_share = get_package_share_directory("picarx")
-    config = os.path.join(pkg_share, "config", "icm20948.yaml")
+    config = PathJoinSubstitution(
+        [FindPackageShare("picarx"), "config", "icm20948.yaml"]
+    )
 
     return LaunchDescription(
         [
@@ -29,6 +29,6 @@ def generate_launch_description():
                 name="icm20948_node",
                 output="screen",
                 parameters=[config],
-            ),
+            )
         ]
     )

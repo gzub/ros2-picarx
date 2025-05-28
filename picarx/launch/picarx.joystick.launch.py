@@ -7,9 +7,15 @@ on Raspberry Pi OS (Pi 5) and is compatible with ROS 2 Jazzy and the SunFounder 
 """
 
 import os
-from ament_index_python.packages import get_package_share_directory
+from pathlib import Path
+
 from launch import LaunchDescription
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+
+SCRIPT_PATH = Path(os.path.realpath(__file__)).parent
+CONFIG_PATH = SCRIPT_PATH.parent / "config"
 
 
 def generate_launch_description():
@@ -22,8 +28,8 @@ def generate_launch_description():
     Returns:
         LaunchDescription: The launch description object for the ROS 2 launch system.
     """
-    parameter_path = os.path.join(
-        get_package_share_directory("picarx"), "config", "joystick.yaml"
+    parameter_path = PathJoinSubstitution(
+        [FindPackageShare("picarx"), "config", "joystick.yaml"]
     )
 
     return LaunchDescription(

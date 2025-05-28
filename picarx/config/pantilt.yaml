@@ -7,4 +7,4 @@ picarx_pantilt_node:
     tilt_min_angle: -30.0
     tilt_max_angle: 60.0
     initial_pan: 0.0      # Initial pan angle in degrees
-    initial_tilt: 30.0     # Initial tilt angle in degrees
+    initial_tilt: 0.0     # Initial tilt angle in degrees

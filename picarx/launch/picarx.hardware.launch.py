@@ -6,11 +6,10 @@ the configuration YAML file. It is designed for use with the SunFounder PiCarX
 on Raspberry Pi OS (Pi 5) and Robot Hat v4.
 """
 
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -21,16 +20,16 @@ def generate_launch_description():
     Returns:
         LaunchDescription: The launch description object for ROS 2 launch system.
     """
-    parameter_path = os.path.join(
-        get_package_share_directory("picarx"), "config", "ackermann.yaml"
+    parameter_path = PathJoinSubstitution(
+        [FindPackageShare("picarx"), "config", "hardware.yaml"]
     )
 
     return LaunchDescription(
         [
             Node(
                 package="picarx",
-                executable="picarx_ackermann",
-                name="picarx_ackermann_node",
+                executable="picarx_hardware",
+                name="picarx_hardware_node",
                 output="both",
                 parameters=[parameter_path],
                 remappings=[

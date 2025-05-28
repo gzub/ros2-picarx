@@ -5,11 +5,10 @@ This launch file starts the object detection node from the raspberrypi_ai_camera
 package with parameters suitable for the PiCarX robot and the IMX500-based AI camera.
 """
 
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -18,9 +17,11 @@ def generate_launch_description():
 
     Launches the object_detection_node with parameters loaded from YAML.
     """
-    parameter_path = os.path.join(
-        get_package_share_directory("picarx"), "config", "ai_camera.yaml"
-    )
+    parameter_path = PathJoinSubstitution([
+        FindPackageShare("picarx"),
+        "config",
+        "ai_camera.yaml"
+    ])
     return LaunchDescription(
         [
             Node(

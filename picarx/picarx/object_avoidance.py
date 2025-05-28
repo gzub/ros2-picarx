@@ -8,13 +8,11 @@ to the Ackermann drive topic if an object is detected within a configurable mini
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import (
-    HistoryPolicy,
-    QoSProfile,
-    ReliabilityPolicy,
     qos_profile_sensor_data,
 )
 from sensor_msgs.msg import Range
-from ackermann_msgs.msg import AckermannDrive
+
+# from ackermann_msgs.msg import AckermannDrive
 
 
 class ObjectAvoidanceNode(Node):
@@ -34,23 +32,18 @@ class ObjectAvoidanceNode(Node):
         """
         super().__init__("object_avoidance")
 
-        qos_profile = QoSProfile(
-            reliability=ReliabilityPolicy.RELIABLE,
-            history=HistoryPolicy.KEEP_LAST,
-            depth=10,
-        )
         # Subscribe to ultrasonic sensor
         self.subscription = self.create_subscription(
             Range,
-            "picarx/ultrasonic_sensor",
+            "/ultrasonic_sensor",
             self.sensor_callback,
             qos_profile_sensor_data,
         )
 
-        # Publish to cmd_ackermann
-        self.publisher_ = self.create_publisher(
-            AckermannDrive, "picarx/cmd_ackermann", qos_profile
-        )
+        # # Publish to cmd_ackermann
+        # self.publisher_ = self.create_publisher(
+        #     AckermannDrive, "picarx/cmd_ackermann", qos_profile
+        # )
 
         # Use parameter name consistent with YAML config
         self.declare_parameter("min_obstacle_distance", 0.3)
@@ -76,9 +69,9 @@ class ObjectAvoidanceNode(Node):
                     f"Object detected within {self.min_distance:.2f} meters ({msg.range:.2f} meters). Stopping!"
                 )
                 # Publish stop command
-                stop_command = AckermannDrive()
-                stop_command.speed = 0.0  # Stop the vehicle
-                stop_command.steering_angle = 0.0  # Stop steering
+                # stop_command = AckermannDrive()
+                # stop_command.speed = 0.0  # Stop the vehicle
+                # stop_command.steering_angle = 0.0  # Stop steering
 
                 # self.publisher_.publish(stop_command)
             else:

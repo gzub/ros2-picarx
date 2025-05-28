@@ -4,18 +4,18 @@
   <name>picarx</name>
   <version>0.0.1</version>
   <description>ROS 2 package for handling speed and angle commands and publishing robot status.</description>
-  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <maintainer email="gzub@alum.wpi.edu">Geoffrey Zub</maintainer>
   <license>Apache 2.0</license>
+  <buildtool_depend>ament_python</buildtool_depend>
 
-  <exec_depend>ackermann_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>robot_hat</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>rviz</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>xacro</exec_depend>
+  
   <export>
     <build_type>ament_python</build_type>
   </export>

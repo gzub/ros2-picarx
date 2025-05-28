@@ -11,6 +11,7 @@ commands to the pan/tilt controller node.
 Compatible with Raspberry Pi OS, PiCarX, and Robot Hat v4.
 """
 
+import os
 import subprocess
 import threading
 
@@ -19,7 +20,7 @@ from geometry_msgs.msg import Vector3
 from rclpy.node import Node
 from vision_msgs.msg import Detection2DArray
 
-from robot_hat.utils import disable_speaker, enable_speaker
+from picarx.robot_hat_interface import Pin, PinMode
 
 
 class PicarxSpeakDetectionsNode(Node):
@@ -29,10 +30,10 @@ class PicarxSpeakDetectionsNode(Node):
 
     Subscribes:
         /camera/detections (vision_msgs/Detection2DArray): Object detection results.
-        picarx/pantilt_angles (geometry_msgs/Vector3): Current pan/tilt angles.
+        /pantilt_angles (geometry_msgs/Vector3): Current pan/tilt angles.
 
     Publishes:
-        picarx/pantilt_cmd (geometry_msgs/Vector3): Desired pan/tilt angles.
+        /pantilt_cmd (geometry_msgs/Vector3): Desired pan/tilt angles.
     """
 
     def __init__(self):
@@ -73,9 +74,9 @@ class PicarxSpeakDetectionsNode(Node):
         self.subscription = self.create_subscription(
             Detection2DArray, "/camera/detections", self.detection_callback, 10
         )
-        self.tilt_pan_pub = self.create_publisher(Vector3, "picarx/pantilt_cmd", 10)
+        self.tilt_pan_pub = self.create_publisher(Vector3, "/pantilt_cmd", 10)
         self.pantilt_angle_sub = self.create_subscription(
-            Vector3, "picarx/pantilt_angles", self.pantilt_angle_callback, 10
+            Vector3, "/pantilt_angles", self.pantilt_angle_callback, 10
         )
         self.last_spoken = set()
         self.pan = 0.0  # Current pan angle/state
@@ -83,6 +84,7 @@ class PicarxSpeakDetectionsNode(Node):
         self.d_pan = 0.0  # Desired pan angle
         self.d_tilt = 0.0  # Desired tilt angle
         self._lock = threading.Lock()
+        self._speaker_device = None  # Pin instance for speaker GPIO
         self.get_logger().info("PicarxSpeakDetectionsNode started.")
 
     def pantilt_angle_callback(self, msg: Vector3):
@@ -92,6 +94,9 @@ class PicarxSpeakDetectionsNode(Node):
         Args:
             msg (geometry_msgs.msg.Vector3): Current pan (x) and tilt (y) angles.
         """
+        self.get_logger().debug(
+            f"Received pan/tilt angles: pan={msg.x:.2f}, tilt={msg.y:.2f}"
+        )
         with self._lock:
             self.pan = msg.x
             self.tilt = msg.y
@@ -107,9 +112,13 @@ class PicarxSpeakDetectionsNode(Node):
         Args:
             msg (vision_msgs.msg.Detection2DArray): Detection results.
         """
+        self.get_logger().debug(f"Received {len(msg.detections)} detections.")
         detected_labels = set()
         # Center camera on the most recently detected object (last in list)
         if msg.detections:
+            self.get_logger().debug(
+                "Processing most recent detection for pan/tilt centering."
+            )
             bbox = msg.detections[-1].bbox
             label = msg.detections[-1].results[0].hypothesis.class_id
             cx = bbox.center.position.x
@@ -120,6 +129,9 @@ class PicarxSpeakDetectionsNode(Node):
             # Dead zone: do not move if error is small
             dead_zone = self.dead_zone
             if abs(err_x) < dead_zone and abs(err_y) < dead_zone:
+                self.get_logger().debug(
+                    f"Detection '{label}' is within dead zone. No pan/tilt command sent."
+                )
                 self.get_logger().debug(
                     f"Detected: {label}, bbox center=({cx:.1f},{cy:.1f}), "
                     f"err_x={err_x:.2f}, err_y={err_y:.2f} -- within dead zone, no pan/tilt command."
@@ -141,34 +153,78 @@ class PicarxSpeakDetectionsNode(Node):
                 cmd.y = self.d_tilt
                 cmd.z = 0.0
                 self.tilt_pan_pub.publish(cmd)
+                self.get_logger().debug(
+                    f"Published pan/tilt command: pan={cmd.x:.2f}, tilt={cmd.y:.2f}"
+                )
         for detection in msg.detections:
             if detection.results:
                 label = detection.results[0].hypothesis.class_id
                 detected_labels.add(label)
         if not detected_labels:
+            self.get_logger().debug("No valid detection labels found.")
             return
 
         # Only speak new detections
         with self._lock:
             new_labels = detected_labels - self.last_spoken
             if not new_labels:
+                self.get_logger().debug("No new detections to speak.")
                 return
             phrase = "I see a " + ", ".join(new_labels)
+            self.get_logger().debug(f"New detections to speak: {phrase}")
             self.last_spoken = detected_labels
 
         self.get_logger().info(f"Speaking: {phrase}")
 
         if self.enable_speaking:
+            self.get_logger().debug("Enabling speaker and speaking phrase.")
             try:
-                enable_speaker()
+                self._enable_speaker()
                 subprocess.run(["espeak", phrase], check=True)
             except Exception as e:
                 self.get_logger().error(f"Failed to speak: {e}")
             finally:
-                disable_speaker()
+                self._disable_speaker()
+                self.get_logger().debug("Speaker disabled after speaking.")
         else:
             self.get_logger().debug("Speaking is disabled by parameter.")
 
+    def _get_speaker_device(self):
+        """
+        Returns a Pin instance for the speaker pin (auto-detected, output mode).
+        Only creates the Pin once and reuses it, avoiding double allocation errors.
+        """
+        pin_num = 20  # Default to GPIO20
+        if self._speaker_device is not None:
+            return self._speaker_device
+        try:
+            self.get_logger().info(
+                f"Initializing speaker Pin on pin {pin_num} (PinMode.OUT)"
+            )
+            self._speaker_device = Pin(pin_num, mode=PinMode.OUT)
+        except Exception as e:
+            self.get_logger().error(f"Failed to initialize speaker Pin: {e}")
+            self._speaker_device = None
+        return self._speaker_device
+
+    def _enable_speaker(self):
+        self.get_logger().debug("Setting speaker GPIO HIGH (enable speaker).")
+        device = self._get_speaker_device()
+        if device is not None:
+            try:
+                device.on()
+                self.get_logger().debug("Speaker pin set HIGH.")
+            except Exception as e:
+                self.get_logger().warn(f"Failed to enable speaker: {e}")
+
+    def _disable_speaker(self):
+        self.get_logger().debug("Setting speaker GPIO LOW (disable speaker).")
+        device = self._get_speaker_device()
+        if device is not None:
+            try:
+                device.off()
+            except Exception as e:
+                self.get_logger().warn(f"Failed to disable speaker: {e}")
 
 def main(args=None):
     """

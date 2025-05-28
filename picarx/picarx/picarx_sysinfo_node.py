@@ -13,8 +13,8 @@ Publishes:
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32
 from sensor_msgs.msg import Temperature
+from std_msgs.msg import Float32
 
 from robot_hat.utils import get_battery_voltage
 
@@ -40,7 +40,15 @@ class PicarxSysInfoNode(Node):
         self.loadavg15_pub = self.create_publisher(Float32, "/loadavg_15min", 10)
         self.voltage_pub = self.create_publisher(Float32, "/battery_voltage", 10)
 
-        self.timer = self.create_timer(2.0, self.timer_callback)  # 0.5 Hz
+
+        # Declare frequency parameter (Hz)
+        self.declare_parameter("frequency", 0.5)  # Default: 0.5 Hz
+        frequency = self.get_parameter("frequency").get_parameter_value().double_value
+        if frequency <= 0.0:
+            self.get_logger().warn("frequency must be > 0. Using 0.5 Hz.")
+            frequency = 0.5
+        timer_period = 1.0 / frequency
+        self.timer = self.create_timer(timer_period, self.timer_callback)
 
         self.get_logger().info("PicarxSysInfoNode started.")
 

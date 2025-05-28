@@ -1,0 +1,33 @@
+# robot_localization EKF configuration for PiCarX
+# See: https://docs.ros.org/en/rolling/p/robot_localization/
+ekf_filter_node:
+  ros__parameters:
+    frequency: 30.0
+    sensor_timeout: 0.1
+    two_d_mode: true  # Operating in 2D mode as the robot moves in a planar environment, despite IMU supporting 9DOF
+    publish_tf: true
+  #  map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: map
+    # IMU
+    imu0: /imu/data_raw
+    imu0_config: [false, false, false,  # x, y, z position
+                  false, false, false,  # x, y, z velocity
+                  false, false, false,  # roll, pitch, yaw orientation
+                  true, true, false,  # x, y, z linear accel
+                  true, true, true]  # x, y, z angular velocity
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: false
+    # Odometry (replace with your actual odom topic if different)
+    odom0: /ackermann_steering_controller/odometry
+    odom0_config: [true,  true,  false,  # x, y, z position
+                   false, false, false, # x, y, z velocity
+                   false, false, false,  # roll, pitch, yaw orientation
+                   false, false, false, # x, y, z linear accel
+                   false, false, false] # x, y, z angular velocity
+    odom0_differential: false
+    odom0_relative: false
+    # Output
+    print_diagnostics: true

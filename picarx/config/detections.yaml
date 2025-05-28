@@ -1,6 +1,6 @@
 picarx_detections_node:
   ros__parameters:
-    enable_speaking: true  # Set to false to disable speaking detected objects
+    enable_speaking: false  # Set to false to disable speaking detected objects
     # Optionally override image_width and image_height if needed:
     # image_width: 640
     # image_height: 480

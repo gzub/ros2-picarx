@@ -5,10 +5,11 @@ This launch file starts the speak detection node for the SunFounder PiCarX robot
 It is designed for use on Raspberry Pi OS (Pi 5) and is compatible with ROS 2 Jazzy.
 """
 
+import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
-import os
 
 
 def generate_launch_description():

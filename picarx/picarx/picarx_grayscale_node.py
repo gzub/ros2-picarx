@@ -1,7 +1,7 @@
 """
-Picarx Grayscale Node for SunFounder PiCarX (Robot Hat v4, ROS 2 Jazzy).
+Picarx Grayscale Node for SunFounder PiCarX (Robot Hat v4, ROS 2 Kilted).
 
-This node interfaces with the SunFounder Grayscale_Module via the Robot Hat v4,
+This node interfaces with the SunFounder Grayscale_Module (which uses a TCRT5000) via the Robot Hat v4,
 publishes raw grayscale sensor data, and publishes line status changes.
 It is designed for use on Raspberry Pi OS (Pi 5) and is compatible with the
 SunFounder PiCarX hardware and ROS 2 conventions.
@@ -13,14 +13,14 @@ References:
 """
 
 import threading
-from logging import getLogger
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from sensor_msgs.msg import Illuminance
 from std_msgs.msg import Int32MultiArray
 
-from robot_hat import ADC, Grayscale_Module
+from picarx.robot_hat_interface import ADC, GrayscaleModule
 
 
 class PicarxGrayscaleNode(Node):
@@ -40,11 +40,11 @@ class PicarxGrayscaleNode(Node):
         super().__init__("picarx_grayscale_node")
         self.get_logger().info("Picarx Grayscale Node has been started.")
 
-        # Declare parameters for ADC pins and reference values
-        self.declare_parameter("adc_pins", [0, 1, 2])  # Default ADC pins
-        self.declare_parameter(
-            "reference_values", [750, 750, 750]
-        )  # Default reference values
+        # Declare parameters for ADC pins, reference values, frame, and frequency
+        self.declare_parameter("adc_pins", [0, 1, 2])
+        self.declare_parameter("reference_values", [750, 750, 750])
+        self.declare_parameter("frame_id", "grayscale_link")
+        self.declare_parameter("frequency", 20.0)  # Default: 20 Hz
 
         # Get parameters
         adc_pins = (
@@ -55,14 +55,18 @@ class PicarxGrayscaleNode(Node):
             .get_parameter_value()
             .integer_array_value
         )
+        self.frame_id = (
+            self.get_parameter("frame_id").get_parameter_value().string_value
+        )
 
         # Initialize the Grayscale Module
         try:
-            self.grayscale_module = Grayscale_Module(
+            self.grayscale_module = GrayscaleModule(
                 pin0=ADC(adc_pins[0]),
                 pin1=ADC(adc_pins[1]),
                 pin2=ADC(adc_pins[2]),
                 reference=reference_values,
+                logger=self.get_logger(),
             )
             self.get_logger().info(
                 f"Grayscale Module initialized with pins {adc_pins} and reference {reference_values}."
@@ -72,14 +76,17 @@ class PicarxGrayscaleNode(Node):
             rclpy.shutdown()
             return
 
-        # Publisher for grayscale data
-        self.grayscale_publisher = self.create_publisher(
-            Int32MultiArray, "picarx/grayscale_data", qos_profile_sensor_data
-        )
+        # Publisher for each grayscale sensor as Illuminance
+        self.illuminance_publishers = [
+            self.create_publisher(
+                Illuminance, f"/grayscale_sensor_{i}", qos_profile_sensor_data
+            )
+            for i in range(3)
+        ]
 
         # Publisher for line status
         self.line_status_publisher = self.create_publisher(
-            Int32MultiArray, "picarx/line_status", qos_profile_sensor_data
+            Int32MultiArray, "/line_status", qos_profile_sensor_data
         )
 
         # Initialize threading lock
@@ -89,7 +96,12 @@ class PicarxGrayscaleNode(Node):
         self.previous_line_status = None
 
         # Timer to periodically read and publish data
-        self.timer = self.create_timer(0.1, self.timer_callback)  # 10 Hz
+        frequency = self.get_parameter("frequency").get_parameter_value().double_value
+        if frequency <= 0.0:
+            self.get_logger().warn("frequency must be > 0. Using 20.0 Hz.")
+            frequency = 20.0
+        timer_period = 1.0 / frequency
+        self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):
         """
@@ -98,15 +110,18 @@ class PicarxGrayscaleNode(Node):
         Reads grayscale data, publishes it, checks for line status changes,
         and publishes line status if it has changed.
         """
-        with self.lock:
-            try:
+        # Only hold the lock for hardware access and updating shared state
+        try:
+            with self.lock:
                 grayscale_data = self.read_grayscale_data()
-                self.publish_grayscale_data(grayscale_data)
+                self.get_logger().debug(f"Grayscale sensor values: {grayscale_data}")
+                self.publish_illuminance(grayscale_data)
 
                 line_status = self.read_line_status(grayscale_data)
-                self.publish_line_status(line_status)
-            except Exception as e:
-                self.get_logger().error(f"Error in timer callback: {e}")
+            # Publish line status outside the lock to avoid holding the lock during publish
+            self.publish_line_status(line_status)
+        except Exception as e:
+            self.get_logger().error(f"Error in timer callback: {e}")
 
     def read_grayscale_data(self):
         """
@@ -121,16 +136,31 @@ class PicarxGrayscaleNode(Node):
             self.get_logger().error(f"Failed to read grayscale data: {e}")
             return []
 
-    def publish_grayscale_data(self, grayscale_data):
+    def publish_illuminance(self, grayscale_data):
         """
-        Publishes grayscale data to the corresponding topic.
+        Publishes each grayscale sensor value as an Illuminance message.
 
         Args:
             grayscale_data (list): The grayscale sensor readings.
         """
-        grayscale_msg = Int32MultiArray()
-        grayscale_msg.data = grayscale_data
-        self.grayscale_publisher.publish(grayscale_msg)
+        # Only lock if accessing shared state (not needed here, as no shared state is modified)
+        if len(grayscale_data) != 3:
+            self.get_logger().warn(
+                f"Expected 3 grayscale values, got {len(grayscale_data)}"
+            )
+            return
+        for i, value in enumerate(grayscale_data):
+            try:
+                msg = Illuminance()
+                msg.header.stamp = self.get_clock().now().to_msg()
+                msg.header.frame_id = f"{self.frame_id}_{i}"
+                msg.illuminance = float(value)
+                msg.variance = 0.0
+                self.illuminance_publishers[i].publish(msg)
+            except IndexError:
+                self.get_logger().error(
+                    f"Sensor index {i} out of range for publishers."
+                )
 
     def read_line_status(self, grayscale_data):
         """
@@ -155,11 +185,18 @@ class PicarxGrayscaleNode(Node):
         Args:
             line_status (list): The current line status.
         """
-        if self.previous_line_status != line_status:
-            line_status_msg = Int32MultiArray()
-            line_status_msg.data = line_status
-            self.line_status_publisher.publish(line_status_msg)
-            self.previous_line_status = line_status
+        # Use lock only for accessing/modifying previous_line_status
+        with self.lock:
+            if not isinstance(line_status, list) or len(line_status) != 3:
+                self.get_logger().warn(
+                    f"Expected 3 line status values, got {line_status}"
+                )
+                return
+            if self.previous_line_status != line_status:
+                line_status_msg = Int32MultiArray()
+                line_status_msg.data = line_status
+                self.line_status_publisher.publish(line_status_msg)
+                self.previous_line_status = line_status
 
     def destroy_node(self):
         """
@@ -185,7 +222,8 @@ def main(args=None):
         if node:
             node.get_logger().info("Shutting down...")
     except Exception as e:
-        getLogger().error("Unhandled exception: %s", e)
+        if node:
+            node.get_logger().error(f"Unhandled exception: {e}")
     finally:
         if node:
             node.destroy_node()

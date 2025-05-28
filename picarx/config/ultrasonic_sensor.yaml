@@ -1,10 +1,8 @@
 picarx_ultrasonic_node:
   ros__parameters:
-    trig_pin: "D2"
-    echo_pin: "D3"
     min_range: 0.02
     max_range: 4.0
     field_of_view: 0.2618
     sensor_timeout: 0.055
     hysteresis_threshold: 0.05
-    timer_period: 1.0
+    frequency: 15.0
